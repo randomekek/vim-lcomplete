@@ -68,7 +68,7 @@ function! LComplete(findstart, base)
 endfunction
 
 function! LCompleteShow()
-  if pumvisible()
+  if getline('.')[col('.') - 2] =~ ' ' || pumvisible()
   else
     call feedkeys("\<C-x>\<C-u>", 'n')
   end
