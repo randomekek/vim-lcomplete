@@ -9,6 +9,12 @@ python << EOF
 import string
 import vim
 
+min_base_length = 2
+max_matches = 6
+min_match_length = 5
+keep = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_'
+search_range = 2000
+
 def matches(base, word):
   word = word.lower()
   return base[0] == word[0] and matchesRest(base[1:], word[1:])
@@ -27,19 +33,18 @@ def matchesRest(base, word):
   return True
 
 def completion(base, lineNo, text):
-  if len(base) < 3:
+  if len(base) < min_base_length:
     return []
-  results = []
-  keep = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_'
+  results = set()
   deletechars = ''.join(chr(c) for c in range(0,256) if chr(c) not in keep)
   table = string.maketrans(deletechars, ' '*len(deletechars))
-  for line in text[max(0, lineNo-2000):lineNo+2000]:
+  for line in text[max(0, lineNo-search_range):lineNo+search_range]:
     for word in line.translate(table).split():
-      if len(word) >= 5 and matches(base, word):
-        results.append(word)
-        if len(results) > 20:
-          return results
-  return results
+      if len(word) >= min_match_length and matches(base, word):
+        results.add(word)
+        if len(results) >= max_matches:
+          return list(results)
+  return list(results)
 
 base = vim.eval('a:base').lower()
 lineNo = int(vim.eval("line('.')"))
