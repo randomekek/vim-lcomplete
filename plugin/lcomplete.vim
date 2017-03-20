@@ -21,6 +21,7 @@ def matchesRest(base, word):
       if pos >= word_len:
         return False
       if word[pos] == char:
+        pos += 1
         break
       pos += 1
   return True
