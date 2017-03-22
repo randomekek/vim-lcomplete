@@ -12,6 +12,7 @@ import vim
 min_base_length = 2
 max_matches = 6
 min_match_length = 5
+max_line_scan = 160
 keep = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_'
 search_range_current = 2000
 search_range_all = 500
@@ -33,9 +34,6 @@ def matchesRest(base, word):
       pos += 1
   return True
 
-def region(buf, center, size):
-  return buf[max(0, center-size):center+size]
-
 def cursor(bufinfo):
   result = {}
   for buf in bufinfo:
@@ -50,13 +48,13 @@ def completion(base, current_buffer_index, bufinfo, buffers):
   deletechars = ''.join(chr(c) for c in range(0,256) if chr(c) not in keep)
   table = string.maketrans(deletechars, ' '*len(deletechars))
   line = cursor(bufinfo)
-  # not a bug: buffers indexed from 1, enumerate(buffers) indexed from 0
-  current_buffer = region(buffers[current_buffer_index+1], line[current_buffer_index+1], search_range_current)
-  search_buffers = [current_buffer] + [
-    region(buffers[idx], line[idx], search_range_all) for idx in line]
+  def region(idx, size):
+    return buffers[idx][max(0, line[idx]-size):line[idx]+size]
+  current_buffer = region(current_buffer_index, search_range_current)
+  search_buffers = [current_buffer] + [region(idx, search_range_all) for idx in line if idx != current_buffer_index]
   for buf in search_buffers:
     for line in buf:
-      for word in line.translate(table).split():
+      for word in line[:max_line_scan].translate(table).split():
         if len(word) >= min_match_length and matches(base, word):
           results.add(word)
           if len(results) >= max_matches:
@@ -64,7 +62,7 @@ def completion(base, current_buffer_index, bufinfo, buffers):
   return list(results)
 
 base = vim.eval('a:base').lower()
-current_buffer_index = int(vim.eval("bufnr('%')"))-1
+current_buffer_index = int(vim.eval("bufnr('%')"))
 bufinfo = vim.eval('getbufinfo()')
 buffers = vim.buffers
 vim.command('let g:lcomplete_ret = ' + str(completion(base, current_buffer_index, bufinfo, buffers)))
