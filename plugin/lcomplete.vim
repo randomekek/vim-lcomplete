@@ -40,7 +40,7 @@ def cursor(bufinfo):
   result = {}
   for buf in bufinfo:
     if buf['listed'] == '1':
-      result[int(buf['bufnr'])-1] = int(buf['lnum'])-1
+      result[int(buf['bufnr'])] = int(buf['lnum'])-1
   return result
 
 def completion(base, current_buffer_index, bufinfo, buffers):
@@ -51,9 +51,9 @@ def completion(base, current_buffer_index, bufinfo, buffers):
   table = string.maketrans(deletechars, ' '*len(deletechars))
   line = cursor(bufinfo)
   # not a bug: buffers indexed from 1, enumerate(buffers) indexed from 0
-  current_buffer = region(buffers[current_buffer_index+1], line[current_buffer_index], search_range_current)
+  current_buffer = region(buffers[current_buffer_index+1], line[current_buffer_index+1], search_range_current)
   search_buffers = [current_buffer] + [
-    region(buf, line[idx], search_range_all) for idx, buf in enumerate(buffers) if idx in line]
+    region(buffers[idx], line[idx], search_range_all) for idx in line]
   for buf in search_buffers:
     for line in buf:
       for word in line.translate(table).split():
