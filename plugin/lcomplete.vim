@@ -18,6 +18,8 @@ search_range_current = 2000
 search_range_all = 500
 
 def matches(base, word):
+  if len(word) < min_match_length:
+    return False
   word = word.lower()
   return base[0] == word[0] and matchesRest(base[1:], word[1:])
 
@@ -32,7 +34,7 @@ def matchesRest(base, word):
         pos += 1
         break
       pos += 1
-  return True
+  return pos + 1
 
 def cursor(bufinfo):
   result = {}
@@ -55,17 +57,23 @@ def completion(base, current_buffer_index, bufinfo, buffers):
   for buf in search_buffers:
     for line in buf:
       for word in line[:max_line_scan].translate(table).split():
-        if len(word) >= min_match_length and matches(base, word):
-          results.add(word)
+        match = matches(base, word)
+        if match:
+          results.add((match, word))
           if len(results) >= max_matches:
             return list(results)
   return list(results)
+
+def sort(results):
+  return map(
+    lambda x: x[1],
+    sorted(results, key=lambda x: x[0], reverse=False))
 
 base = vim.eval('a:base').lower()
 current_buffer_index = int(vim.eval("bufnr('%')"))
 bufinfo = vim.eval('getbufinfo()')
 buffers = vim.buffers
-vim.command('let g:lcomplete_ret = ' + str(completion(base, current_buffer_index, bufinfo, buffers)))
+vim.command('let g:lcomplete_ret = ' + str(sort(completion(base, current_buffer_index, bufinfo, buffers))))
 EOF
   return {'words': g:lcomplete_ret, 'refresh': 'always'}
 endfunction
@@ -90,9 +98,9 @@ function! LCompleteShow()
   end
 endfunction
 
-fun! TabComplete()
-  if getline('.')[col('.') - 2] =~ '\K' || pumvisible()
-    return "\<C-N>"
+fun! LCompleteRun(cmd)
+  if pumvisible()
+    return a:cmd
   else
     return "\<Tab>"
   endif
@@ -103,7 +111,8 @@ set completefunc=LComplete
 set shortmess+=c
 
 " chose a selection or insert a <tab>
-inoremap <expr> <Tab> TabComplete()
+inoremap <expr> <tab> LCompleteRun("\<C-N>")
+inoremap <expr> <S-tab> LCompleteRun("\<C-P>")
 
 " enter will always insert a new line
 inoremap <expr> <CR> pumvisible() && !has_key(v:completed_item, 'word') ? "\<C-e>\<CR>" : "<CR>"
