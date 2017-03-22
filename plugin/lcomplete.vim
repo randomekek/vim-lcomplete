@@ -92,18 +92,10 @@ function! LComplete(findstart, base)
 endfunction
 
 function! LCompleteShow()
-  if getline('.')[col('.') - 2] =~ ' ' || pumvisible()
+  if getline('.')[col('.') - 2] == ' ' || pumvisible()
   else
     call feedkeys("\<C-x>\<C-u>", 'n')
   end
-endfunction
-
-fun! LCompleteRun(cmd)
-  if pumvisible()
-    return a:cmd
-  else
-    return "\<Tab>"
-  endif
 endfunction
 
 set completeopt=menuone,noinsert,noselect
@@ -111,8 +103,8 @@ set completefunc=LComplete
 set shortmess+=c
 
 " chose a selection or insert a <tab>
-inoremap <expr> <tab> LCompleteRun("\<C-N>")
-inoremap <expr> <S-tab> LCompleteRun("\<C-P>")
+inoremap <expr> <tab> pumvisible() ? "\<C-N>" : "\<tab>"
+inoremap <expr> <S-tab> pumvisible() ? "\<C-P>" : "\<tab>"
 
 " enter will always insert a new line
 inoremap <expr> <CR> pumvisible() && !has_key(v:completed_item, 'word') ? "\<C-e>\<CR>" : "<CR>"
