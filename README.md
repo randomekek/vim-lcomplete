@@ -6,3 +6,4 @@ opinionated autocomplete for vim.
 - case insensitive
 - fuzzy matching: skip any number of letters (key order must be retained). irev will match InsertReturnValue
 - python implementation (vimscript is too difficult to learn)
+- keywords from all open buffers. no intelligent suggestion, but it is fast.
