@@ -4,5 +4,5 @@ opinionated autocomplete for vim.
 - tab: next completion
 - s-tab: prev completion
 - case insensitive
-- you can skip letters. eg: insrv will match InsertReturnValue
-- python implementation (vimscript is too hard to learn)
+- fuzzy matching: skip any number of letters (key order must be retained). irev will match InsertReturnValue
+- python implementation (vimscript is too difficult to learn)
