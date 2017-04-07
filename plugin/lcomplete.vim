@@ -4,6 +4,10 @@ if !has('python')
   finish
 endif
 
+if !exists('g:lcomplete_chars')
+  let g:lcomplete_chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_.:@'
+endif
+
 function! LCompletePy(base)
 python << EOF
 import string
@@ -13,7 +17,7 @@ min_base_length = 2
 max_matches = 6
 min_match_length = 5
 max_line_scan = 160
-keep = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_'
+keep = vim.eval('g:lcomplete_chars')
 search_range_current = 2000
 search_range_all = 500
 
@@ -67,7 +71,7 @@ def completion(base, current_buffer_index, bufinfo, buffers):
 def sort(results):
   return map(
     lambda x: x[1],
-    sorted(results, key=lambda x: x[0], reverse=False))
+    sorted(results, key=lambda x: (x[0], len(x[1]), x[1]), reverse=False))
 
 base = vim.eval('a:base').lower()
 current_buffer_index = int(vim.eval("bufnr('%')"))
@@ -82,7 +86,7 @@ function! LComplete(findstart, base)
   if a:findstart
     let line = getline('.')
     let start = col('.') - 1
-    while start > 0 && line[start - 1] =~ '[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_]'
+    while start > 0 && line[start - 1] =~ ('[' . g:lcomplete_chars . ']')
       let start -= 1
     endwhile
     return start
