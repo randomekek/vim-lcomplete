@@ -4,9 +4,8 @@ if !has('python')
   finish
 endif
 
-if !exists('g:lcomplete_chars')
-  let g:lcomplete_chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_.:@'
-endif
+let g:lcomplete_chars = get(g:, 'lcomplete_chars', 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_.:@')
+let g:lcomplete_end_strip = get(g:, 'lcomplete_end_strip', '.:@')
 
 function! LCompletePy(base)
 python << EOF
@@ -17,14 +16,12 @@ min_base_length = 2
 max_matches = 6
 min_match_length = 5
 max_line_scan = 160
-keep = vim.eval('g:lcomplete_chars')
 search_range_current = 2000
 search_range_all = 500
 
 def matches(base, word):
   if len(word) < min_match_length:
     return False
-  word = word.lower()
   return base[0] == word[0] and matchesRest(base[1:], word[1:])
 
 def matchesRest(base, word):
@@ -34,11 +31,17 @@ def matchesRest(base, word):
     while True:
       if pos >= word_len:
         return False
-      if word[pos] == char:
+      if charMatch(char, word[pos]):
         pos += 1
         break
       pos += 1
   return pos + 1
+
+def charMatch(char, match):
+  if char.islower():
+    return char == match.lower()
+  else:
+    return char == match
 
 def cursor(bufinfo):
   result = {}
@@ -47,12 +50,14 @@ def cursor(bufinfo):
       result[int(buf['bufnr'])] = int(buf['lnum'])-1
   return result
 
-def completion(base, current_buffer_index, bufinfo, buffers):
+def maketrans(kept_chars):
+  deletechars = ''.join(chr(c) for c in range(0,256) if chr(c) not in kept_chars)
+  return string.maketrans(deletechars, ' '*len(deletechars))
+
+def completion(base, current_buffer_index, bufinfo, buffers, chars, end_strip):
   if len(base) < min_base_length:
     return []
   results = set()
-  deletechars = ''.join(chr(c) for c in range(0,256) if chr(c) not in keep)
-  table = string.maketrans(deletechars, ' '*len(deletechars))
   line = cursor(bufinfo)
   def region(idx, size):
     return buffers[idx][max(0, line[idx]-size):line[idx]+size]
@@ -60,7 +65,8 @@ def completion(base, current_buffer_index, bufinfo, buffers):
   search_buffers = [current_buffer] + [region(idx, search_range_all) for idx in line if idx != current_buffer_index]
   for buf in search_buffers:
     for line in buf:
-      for word in line[:max_line_scan].translate(table).split():
+      for word in line[:max_line_scan].translate(chars).split():
+        word = word.rstrip(end_strip)
         match = matches(base, word)
         if match:
           results.add((match, word))
@@ -73,11 +79,16 @@ def sort(results):
     lambda x: x[1],
     sorted(results, key=lambda x: (x[0], len(x[1]), x[1]), reverse=False))
 
-base = vim.eval('a:base').lower()
-current_buffer_index = int(vim.eval("bufnr('%')"))
-bufinfo = vim.eval('getbufinfo()')
-buffers = vim.buffers
-vim.command('let g:lcomplete_ret = ' + str(sort(completion(base, current_buffer_index, bufinfo, buffers))))
+def run():
+  base = vim.eval('a:base')
+  current_buffer_index = int(vim.eval("bufnr('%')"))
+  bufinfo = vim.eval('getbufinfo()')
+  buffers = vim.buffers
+  chars = maketrans(vim.eval('g:lcomplete_chars'))
+  end_strip = maketrans(vim.eval('g:lcomplete_end_strip'))
+  vim.command('let g:lcomplete_ret = ' + str(sort(completion(base, current_buffer_index, bufinfo, buffers, chars, end_strip))))
+
+run()
 EOF
   return {'words': g:lcomplete_ret, 'refresh': 'always'}
 endfunction
