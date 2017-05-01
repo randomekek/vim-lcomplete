@@ -22,7 +22,7 @@ search_range_all = 500
 def matches(base, word):
   if len(word) < min_match_length:
     return False
-  return base[0] == word[0] and matchesRest(base[1:], word[1:])
+  return charMatch(base[0], word[0]) and matchesRest(base[1:], word[1:])
 
 def matchesRest(base, word):
   pos = 0
