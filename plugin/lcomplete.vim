@@ -100,7 +100,11 @@ function! LComplete(findstart, base)
     while start > 0 && line[start - 1] =~ ('[' . g:lcomplete_chars . ']')
       let start -= 1
     endwhile
-    return start
+    if col('.') - start < 3
+      return -3
+    else
+      return start
+    endif
   else
     return LCompletePy(a:base)
   endif
