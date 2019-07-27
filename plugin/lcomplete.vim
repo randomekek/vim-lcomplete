@@ -1,6 +1,6 @@
 " autocomplete as you type with fuzzy search
 
-if !has('python')
+if !has('python3')
   finish
 endif
 
@@ -8,8 +8,7 @@ let g:lcomplete_chars = get(g:, 'lcomplete_chars', 'abcdefghijklmnopqrstuvwxyzAB
 let g:lcomplete_end_strip = get(g:, 'lcomplete_end_strip', '.:@')
 
 function! LCompletePy(base)
-python << EOF
-import string
+python3 << EOF
 import vim
 
 min_base_length = 2
@@ -52,7 +51,7 @@ def cursor(bufinfo):
 
 def maketrans(kept_chars):
   deletechars = ''.join(chr(c) for c in range(0,256) if chr(c) not in kept_chars)
-  return string.maketrans(deletechars, ' '*len(deletechars))
+  return str.maketrans(deletechars, ' '*len(deletechars))
 
 def completion(base, current_buffer_index, bufinfo, buffers, chars, end_strip):
   if len(base) < min_base_length:
@@ -75,9 +74,9 @@ def completion(base, current_buffer_index, bufinfo, buffers, chars, end_strip):
   return list(results)
 
 def sort(results):
-  return map(
+  return list(map(
     lambda x: x[1],
-    sorted(results, key=lambda x: (x[0], len(x[1]), x[1]), reverse=False))
+    sorted(results, key=lambda x: (x[0], len(x[1]), x[1]), reverse=False)))
 
 def run():
   base = vim.eval('a:base')
@@ -85,7 +84,7 @@ def run():
   bufinfo = vim.eval('getbufinfo()')
   buffers = vim.buffers
   chars = maketrans(vim.eval('g:lcomplete_chars'))
-  end_strip = maketrans(vim.eval('g:lcomplete_end_strip'))
+  end_strip = vim.eval('g:lcomplete_end_strip')
   vim.command('let g:lcomplete_ret = ' + str(sort(completion(base, current_buffer_index, bufinfo, buffers, chars, end_strip))))
 
 run()
